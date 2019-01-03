@@ -62,11 +62,13 @@ router.put('/:id', (req, res, next) => {
 
   /***** Never trust users - validate input *****/
   const updateObj = {};
-  const updateableFields = ['title', 'content'];
+  const updateableFields = ['title', 'content', 'folderId'];
 
   updateableFields.forEach(field => {
     if (field in req.body) {
-      updateObj[field] = req.body[field];
+      let propName;
+      field === 'folderId' ?  propName = 'folder_id' : propName = field;
+      updateObj[propName] = req.body[field];
     }
   });
 
@@ -81,6 +83,13 @@ router.put('/:id', (req, res, next) => {
     .update(updateObj)
     .where('id', id)
     .returning('*')
+    .then(() => {
+      return knex
+        .select('notes.id', 'title', 'content', 'folder_id as folderId', 'folders.name as folderName')
+        .from('notes')
+        .leftJoin('folders', 'notes.folder_id', 'folders.id')
+        .where('notes.id', id);
+    })
     .then(([item]) => {
       if (item) {
         res.json(item);
@@ -95,9 +104,13 @@ router.put('/:id', (req, res, next) => {
 
 // Post (insert) an item
 router.post('/', (req, res, next) => {
-  const { title, content } = req.body;
+  const { title, content, folderId } = req.body;
 
-  const newItem = { title, content };
+  const newItem = { 
+    title, 
+    content,
+    folder_id: folderId
+  };
   /***** Never trust users - validate input *****/
   if (!newItem.title) {
     const err = new Error('Missing `title` in request body');
@@ -108,15 +121,20 @@ router.post('/', (req, res, next) => {
   knex
     .insert(newItem)
     .into('notes')
-    .returning('*')
+    .returning('id')
+    .then(([id]) => {
+      return knex
+        .select('notes.id', 'title', 'content', 'folder_id as folderId', 'folders.name as folderName')
+        .from('notes')
+        .leftJoin('folders', 'notes.folder_id', 'folders.id')
+        .where('notes.id', id);
+    })
     .then(([item]) => {
       if (item) {
-        res.location(`http://${req.headers.host}/notes/${item.id}`).status(201).json(item);
+        res.location(`${req.originalUrl}/${item.id}`).status(201).json(item);
       }
     })
-    .catch(err => {
-      next(err);
-    });
+    .catch(err => next(err));
 });
 
 // Delete an item
