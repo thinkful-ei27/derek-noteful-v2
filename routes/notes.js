@@ -10,7 +10,7 @@ const hydrateNotes = require('../utils/hydrateNotes');
 
 // Get All (and search by query)
 router.get('/', (req, res, next) => {
-  const { searchTerm, folderId } = req.query;
+  const { searchTerm, folderId, tagId } = req.query;
 
   knex
     .select('notes.id', 'title', 'content', 'folders.id as folderId', 'folders.name as folderName', 'tags.id as tagId', 'tags.name as tagName')
@@ -26,6 +26,11 @@ router.get('/', (req, res, next) => {
     .modify(queryBuilder => {
       if (folderId) {
         queryBuilder.where('folder_id', folderId);
+      }
+    })
+    .modify(queryBuilder => {
+      if (tagId) {
+        queryBuilder.where('tag_id', tagId);
       }
     })
     .orderBy('notes.id')
