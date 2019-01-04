@@ -1,33 +1,30 @@
 'use strict';
 
 const express = require('express');
-
-// Create a router instance
-const router = express.Router();
-
 const knex = require('../knex');
 
-// Get All Folders
+const router = express.Router();
+
+// Get all tags
 router.get('/', (req, res, next) => {
-  knex.select('id', 'name')
-    .from('folders')
-    .then(results => {
-      res.json(results);
-    })
+  knex
+    .select('id', 'name')
+    .from('tags')
+    .then(results => res.json(results))
     .catch(err => next(err));
 });
 
-// Get Folder by id
+// Get tag by id
 router.get('/:id', (req, res, next) => {
   const id = req.params.id;
 
   knex
     .first('id', 'name')
-    .from('folders')
+    .from('tags')
     .where('id', id)
-    .then(item => {
-      if (item) {
-        res.json(item);
+    .then(tag => {
+      if (tag) {
+        res.json(tag);
       } else {
         next();
       }
@@ -35,7 +32,29 @@ router.get('/:id', (req, res, next) => {
     .catch(err => next(err));
 });
 
-// Update Folder
+// Create tag
+router.post('/', (req, res, next) => {
+  const { name } = req.body;
+
+  /***** Never trust users. Validate input *****/
+  if (!name) {
+    const err = new Error('Missing `name` in request body');
+    err.status = 400;
+    return next(err);
+  }
+
+  const newItem = { name };
+
+  knex.insert(newItem)
+    .into('tags')
+    .returning(['id', 'name'])
+    .then(([result]) => {
+      res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
+    })
+    .catch(err => next(err));
+});
+
+// Update tag
 router.put('/:id', (req, res, next) => {
   const id = req.params.id;
 
@@ -56,13 +75,13 @@ router.put('/:id', (req, res, next) => {
     return next(err);
   }
 
-  knex('folders')
+  knex('tags')
     .update(updateObj)
     .where('id', id)
     .returning('*')
-    .then(([item]) => {
-      if (item) {
-        res.json(item);
+    .then(([tag]) => {
+      if (tag) {
+        res.json(tag);
       } else {
         next();
       }
@@ -70,44 +89,14 @@ router.put('/:id', (req, res, next) => {
     .catch(err => next(err));
 });
 
-// Create a Folder
-router.post('/', (req, res, next) => {
-  const { name } = req.body;
-
-  const newFolder = { name };
-
-  /***** Never trust users - validate input *****/
-  if (!newFolder.name) {
-    const err = new Error('Missing `name` in request body');
-    err.status = 400;
-    return next(err);
-  }
-
-  knex
-    .insert(newFolder)
-    .into('folders')
-    .returning('*')
-    .then(([item]) => {
-      if (item) {
-        res
-          .location(`http://${req.headers.host}/folders/${item.id}`)
-          .status(201)
-          .json(item);
-      }
-    })
-    .catch(err => next(err));
-});
-
-// Delete Folder
+// Delete tag
 router.delete('/:id', (req, res, next) => {
   const id = req.params.id;
 
-  knex('folders')
+  knex('tags')
     .del()
     .where('id', id)
-    .then(() => {
-      res.sendStatus(204);
-    })
+    .then(() => res.sendStatus(204))
     .catch(err => next(err));
 });
 

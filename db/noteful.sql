@@ -38,8 +38,8 @@ INSERT INTO folders (name) VALUES
   ('Work');
 
 INSERT INTO tags (name) VALUES
-  ('Lady Gaga'),
   ('Cats'),
+  ('Lady Gaga'),
   ('Lists');
 
 INSERT INTO notes (title, content, folder_id) VALUES 
