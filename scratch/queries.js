@@ -66,3 +66,8 @@ const knex = require('../knex');
 //   .where('id', '1010')
 //   .then(results => console.log(JSON.stringify(results, null, 2)))
 //   .catch(err => console.error(err));
+
+// Convert array of tagIds into array of objects
+// const noteId = 99;
+// const result = [34, 56, 78].map(tagId => ({ note_id: noteId, tag_id: tagId }));
+// console.log(`insert: ${result} into notes_tags`);
